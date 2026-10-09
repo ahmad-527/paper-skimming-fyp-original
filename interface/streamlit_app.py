@@ -1,6 +1,7 @@
 """Free Community Cloud entry point for the later reading interface."""
 from pathlib import Path
 import os
+import traceback
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -74,7 +75,11 @@ def workspace():
         response["data"] = classifier.predict(validate_text(request.get("text")))
     except (ValueError, RuntimeError) as error:
         response["error"] = str(error)
-    except Exception:
+    except Exception as error:
+        # Record code locations only: exception messages may contain submitted text.
+        locations = ' > '.join(f'{Path(frame.filename).name}:{frame.lineno}:{frame.name}'
+                               for frame in traceback.extract_tb(error.__traceback__))
+        print(f'Inference failed: {type(error).__name__}; {locations}', flush=True)
         response["error"] = "The model could not complete this read. Please try again."
     st.session_state["readout_response"] = response
     st.rerun(scope="fragment")
