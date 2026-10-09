@@ -24,6 +24,10 @@ def validate_text(value):
         raise ValueError("Paste an abstract before analysing it.")
     if len(value) > MAX_CHARACTERS:
         raise ValueError("Use an abstract of 20,000 characters or fewer.")
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        raise ValueError("The abstract contains an invalid Unicode character. Paste plain text and try again.") from None
     return value.strip()
 
 
@@ -124,6 +128,8 @@ class Classifier:
             probabilities = self._predict(sentences)
         finally:
             self.lock.release()
+        if probabilities.shape != (len(sentences), 5):
+            raise RuntimeError("The model returned an invalid prediction.")
         rows = []
         for i, (sentence, scores) in enumerate(zip(sentences, probabilities)):
             scores = [float(x) for x in scores]

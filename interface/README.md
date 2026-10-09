@@ -32,6 +32,8 @@ The inference path retains the notebook's blank English spaCy sentencizer, origi
 
 The loader traces inference once into a TensorFlow concrete function before serving requests. This prevents Streamlit's Keras cleanup between page runs from interrupting another visitor's prediction. The weights, architecture and preprocessing are unchanged; graph and original eager predictions agree within an absolute probability tolerance of `1e-5` on the historical example, with identical predicted labels.
 
+The training domain is biomedical randomized controlled trial abstracts. Reviews and other paper types may receive less reliable labels. Paste the abstract body without keywords or publisher notices; the app preserves submitted wording and does not silently remove these lines. Successful execution on arbitrary text does not establish classification accuracy on that text.
+
 ## Deployment
 
 ### Free Streamlit Community Cloud
@@ -46,6 +48,8 @@ PAPER_SKIMMING_MODEL_TOKEN = "your-read-only-token"
 ```
 
 Keep actual tokens in host secrets, outside Git. Give the token read access only to that private model. The verified checkpoint hash is still enforced. Without model settings, only the clearly labelled recorded example is available. The thesis link opens the public, cleaned PDF on GitHub.
+
+Hosted JSON and Markdown exports use Streamlit's in-memory HTTP download service, with links maintained for the active session. They include every sentence and its scores even when a role filter is selected. Input and export contents are held in session memory and are not logged or saved to host disk. The adapter uses the pinned Streamlit 1.50 file manager; an upgrade needs the download lifecycle checks repeated.
 
 The service is free for personal/educational apps and may sleep when inactive. Its shared CPU and memory limits must accommodate TensorFlow and USE; a successful local run does not guarantee a cloud deployment will fit. No paid upgrade is needed to use this entry point. The model storage provider currently includes 100 GB of private storage for free accounts; this checkpoint is approximately 1.7 MB. The encoder downloads separately into the host's cache.
 
@@ -76,7 +80,7 @@ The local server binds loopback by default; `--host`/`--port` or `PAPER_SKIMMING
 
 Verified locally with the pinned Python runtime: the checkpoint loads, produces five probabilities per sentence, and processes the eight-sentence example through the API. Input rejection, same-origin handling, static-file boundaries, label mapping and the original out-of-range position behaviour were checked. The hosted app loaded the private checkpoint and classified the eight-sentence example with the same labels and displayed scores as the local runtime. Public access was confirmed in the host's sharing settings. The original notebooks were not executed. Interface additions do not establish new benchmark scores.
 
-The real-checkpoint regression suite covers simultaneous Keras cleanup and inference, repeated caller threads, recovery after invalid input, Unicode and pasted headings, 1–80 sentences, the character limit, and graph/eager agreement. Run it after setting the external model and encoder cache as above:
+The regression suite covers JSON/Markdown preservation and provenance, simultaneous Keras cleanup and inference, repeated caller threads, recovery after invalid input or model failure, busy requests, invalid output shape, Unicode and pasted headings, 1–80 sentences, the character limit, and graph/eager agreement. Run it after setting the external model and encoder cache as above:
 
 ```powershell
 .\.venv\Scripts\python.exe interface\test_inference.py -v

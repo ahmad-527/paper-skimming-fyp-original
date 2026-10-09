@@ -2,10 +2,12 @@
 from pathlib import Path
 import os
 import traceback
+import json
 
 import streamlit as st
 import streamlit.components.v1 as components
 from server import Classifier, validate_text
+from exports import readout_exports
 
 ROOT = Path(__file__).resolve().parent
 st.set_page_config(page_title="Paper Skimming", page_icon="📄", layout="wide")
@@ -56,10 +58,30 @@ def historical_classifier():
 classifier = historical_classifier()
 
 
+def download_links(readout, coordinates):
+    # Use the same in-memory HTTP file manager as Streamlit's download button.
+    # Re-register on every run so active-session links survive fragment cleanup.
+    from streamlit.runtime import get_instance
+    manager = get_instance().media_file_mgr
+    return {extension: manager.add(content, mime, f"{coordinates}.{extension}",
+                                   file_name=f"paper-skimming-readout.{extension}",
+                                   is_for_static_download=True)
+            for extension, content in readout_exports(readout).items()
+            for mime in ["application/json" if extension == "json" else "text/markdown"]}
+
+
 @st.fragment(run_every=2)
 def workspace():
+    last_readout = st.session_state.get("last_readout")
+    live_exports = None
+    if last_readout:
+        live_exports = {"request_id": last_readout["request_id"],
+                        **download_links(last_readout["data"], "paper-skimming-live")}
+    recorded = json.loads((ROOT / "static/sample.json").read_text(encoding="utf-8"))
     request = reading_workspace(
         status=classifier.status(), response=st.session_state.get("readout_response"),
+        live_exports=live_exports,
+        recorded_exports=download_links(recorded, "paper-skimming-recorded"),
         thesis_url="https://github.com/ahmad-527/paper-skimming-fyp-original/blob/main/report/final_year_report.pdf",
         key="reading_workspace", default=None)
     if not isinstance(request, dict):
@@ -74,6 +96,7 @@ def workspace():
     try:
         response["text"] = validate_text(request.get("text"))
         response["data"] = classifier.predict(response["text"])
+        st.session_state["last_readout"] = response
     except (ValueError, RuntimeError) as error:
         response["error"] = str(error)
     except Exception as error:

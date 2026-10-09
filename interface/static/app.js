@@ -7,6 +7,7 @@ const roles = [
 let sample, result, analysedText = '', grouped = false, filter = 'ALL', busy = false, modelState = 'loading';
 const text = $('abstract');
 let cloud = false, cloudOrigin = null, cloudRequest = null, lastCloudResponse = null, lastFrameHeight = 0;
+let currentReadoutId = null, liveExports = null, recordedExports = null, preparedResult = null, localExportUrls = [];
 function cloudMessage(type, value) {
   window.parent.postMessage({isStreamlitMessage:true,type,...value},cloudOrigin || '*');
 }
@@ -21,16 +22,19 @@ window.addEventListener('message', event => {
   const args = event.data.args || {};
   if (args.status) showStatus(args.status.state);
   if (args.thesis_url) document.querySelectorAll('a[href="/report.pdf"]').forEach(link => {link.href=args.thesis_url;});
+  liveExports = args.live_exports || null; recordedExports = args.recorded_exports || null;
   const response = args.response;
   if (cloudRequest && response?.request_id === cloudRequest.id) {
     const pending = cloudRequest; cloudRequest = null; clearTimeout(pending.timer);
     lastCloudResponse = response.request_id;
+    if (response.data) currentReadoutId = response.request_id;
     response.error ? pending.reject(Error(response.error)) : pending.resolve(response.data);
   } else if (!cloudRequest && !result && response?.request_id && response.request_id !== lastCloudResponse) {
     // Streamlit can recreate the iframe during a full page run. Restore its
     // session response so a completed request survives that browser remount.
     lastCloudResponse = response.request_id;
     if (response.data) {
+      currentReadoutId = response.request_id;
       result = response.data; text.value = result.text; analysedText = result.text;
       grouped = false; filter = 'ALL'; render(); updateInput();
       announce(`${result.sentences.length} sentences classified.`);
@@ -38,6 +42,7 @@ window.addEventListener('message', event => {
       text.value = response.text || ''; updateInput(); setError(response.error);
     }
   }
+  updateExportLinks();
   frameHeight();
 });
 if (window.parent !== window) cloudMessage('streamlit:componentReady',{apiVersion:1});
@@ -129,6 +134,7 @@ function render() {
       rows.forEach(row=>list.append(sentenceCard(row)));
     }
   } else visible.forEach(row=>list.append(sentenceCard(row)));
+  updateExportLinks();
 }
 function sentenceCard(row) {
   const [label,name,cls] = roles.find(r=>r[0] === row.label);
@@ -151,18 +157,46 @@ function sentenceCard(row) {
 }
 $('order-view').addEventListener('click',()=>{grouped=false;render();});
 $('group-view').addEventListener('click',()=>{grouped=true;render();});
-function openDialog(id) { $(id).showModal(); }
+function openDialog(id) { if (id === 'export-dialog') $('copy-status').textContent = ''; $(id).showModal(); }
 $('about-button').addEventListener('click',()=>openDialog('research-dialog'));
 $('close-research').addEventListener('click',()=>$('research-dialog').close());
 $('export-button').addEventListener('click',()=>openDialog('export-dialog'));
 $('close-export').addEventListener('click',()=>$('export-dialog').close());
 for (const id of ['research-dialog','export-dialog']) $(id).addEventListener('click',event=>{if(event.target === $(id)){const r=$(id).getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom) $(id).close();}});
 function markdown() {
-  return `# Paper Skimming readout\n\nSource: ${result.mode === 'recorded' ? 'Preserved notebook example' : result.model}\nInterface added: 9 October 2026, after original project completion.\nScores are not calibrated certainty.\n\n` + result.sentences.map(s=>`## ${s.index+1}. ${s.label}\n\n${s.text}\n\nModel score: ${(s.scores[s.label]*100).toFixed(1)}%\n`).join('\n');
+  return `# Paper Skimming readout\n\nSource: ${result.mode === 'recorded' ? 'Preserved notebook example' : result.model}\nInterface added: 9 October 2026, after original project completion.\nIntended domain: Biomedical randomized controlled trial abstracts.\nScores are not calibrated certainty.\n\n` + result.sentences.map(s=>`## ${s.index+1}. ${s.label}\n\n${s.text}\n\nModel score: ${(s.scores[s.label]*100).toFixed(1)}%\n`).join('\n');
 }
-function download(content,type,extension) {
-  const url = URL.createObjectURL(new Blob([content],{type})); const link = node('a'); link.href=url;link.download=`paper-skimming-readout.${extension}`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);announce('Readout downloaded.');
+function updateExportLinks() {
+  if (!result) return;
+  let links;
+  if (cloud) {
+    const exports = result.mode === 'recorded' ? recordedExports : liveExports?.request_id === currentReadoutId ? liveExports : null;
+    const base = new URLSearchParams(window.location.search).get('streamlitUrl');
+    links = {};
+    for (const extension of ['json','md']) {
+      const path = exports?.[extension];
+      if (base && /^\/media\/[a-f0-9]+\.[a-z0-9]+$/.test(path || '')) {
+        const url = new URL(path.slice(1), base);
+        if (url.origin === cloudOrigin) links[extension] = url.href;
+      }
+    }
+  } else {
+    if (preparedResult !== result) {
+      localExportUrls.forEach(url=>URL.revokeObjectURL(url));
+      const json = JSON.stringify({...result,interface_added:'9 October 2026',scores_are_calibrated:false,intended_domain:'Biomedical randomized controlled trial abstracts'},null,2);
+      localExportUrls = [URL.createObjectURL(new Blob([json],{type:'application/json'})),URL.createObjectURL(new Blob([markdown()],{type:'text/markdown'}))];
+      preparedResult = result;
+    }
+    links = {json:localExportUrls[0],md:localExportUrls[1]};
+  }
+  for (const extension of ['json','md']) {
+    const link = $(extension === 'json' ? 'download-json' : 'download-markdown');
+    if (links[extension]) {link.href=links[extension];link.removeAttribute('aria-disabled');}
+    else {link.removeAttribute('href');link.setAttribute('aria-disabled','true');}
+  }
 }
-$('download-json').addEventListener('click',()=>download(JSON.stringify({...result,interface_added:'9 October 2026',scores_are_calibrated:false},null,2),'application/json','json'));
-$('download-markdown').addEventListener('click',()=>download(markdown(),'text/markdown','md'));
+for (const id of ['download-json','download-markdown']) $(id).addEventListener('click',event=>{
+  if (!$(id).hasAttribute('href')) {event.preventDefault();$('copy-status').textContent='Preparing downloads. Try again in a moment, or copy the readout.';}
+  else announce('Export download requested.');
+});
 $('copy-result').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(markdown());$('copy-status').textContent='Copied to clipboard.';}catch(e){$('copy-status').textContent='Clipboard unavailable. Download the Markdown readout instead.';}});

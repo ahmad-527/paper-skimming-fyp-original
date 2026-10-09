@@ -8,6 +8,40 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 
 from server import Classifier, LABELS, position_features
+from exports import readout_exports
+
+
+class ExportTests(unittest.TestCase):
+    def test_recorded_export_preserves_every_sentence_and_score(self):
+        sample = json.loads((Path(__file__).parent / 'static/sample.json').read_text())
+        original = json.dumps(sample, sort_keys=True)
+        files = readout_exports(sample)
+        exported = json.loads(files['json'])
+        self.assertEqual(exported['sentences'], sample['sentences'])
+        self.assertEqual(exported['source'], sample['source'])
+        self.assertEqual(exported['mode'], 'recorded')
+        self.assertFalse(exported['scores_are_calibrated'])
+        self.assertEqual(json.dumps(sample, sort_keys=True), original)
+        markdown = files['md'].decode('utf-8')
+        self.assertIn('Preserved notebook example', markdown)
+        for row in sample['sentences']:
+            self.assertIn(row['text'], markdown)
+            self.assertIn(f"## {row['index'] + 1}. {row['label']}", markdown)
+
+    def test_live_export_preserves_unicode_and_provenance(self):
+        text = 'β-catenin changed by 3.5 µg/mL. <script>original wording</script>'
+        readout = {'mode': 'live', 'model': 'Historical checkpoint', 'text': text,
+                   'sentences': [{'index': 0, 'text': text, 'label': 'RESULTS',
+                                  'scores': {label: float(label == 'RESULTS') for label in LABELS}}]}
+        files = readout_exports(readout)
+        self.assertEqual(json.loads(files['json'])['text'], text)
+        self.assertIn(text, files['md'].decode('utf-8'))
+        self.assertIn('Source: Historical checkpoint', files['md'].decode('utf-8'))
+        self.assertIn('randomized controlled trial', files['md'].decode('utf-8'))
+
+    def test_export_rejects_nonfinite_probabilities(self):
+        with self.assertRaises(ValueError):
+            readout_exports({'mode': 'live', 'model': 'Historical', 'sentences': [], 'value': float('nan')})
 
 
 class HistoricalInferenceTests(unittest.TestCase):
@@ -54,11 +88,34 @@ class HistoricalInferenceTests(unittest.TestCase):
         self.check_readout('A' * 20_000, 1)
 
     def test_input_limits_and_recovery(self):
-        for value in ('', ' ', None, 'x' * 20_001, 'A measurement was recorded. ' * 81):
+        for value in ('', ' ', None, 'x' * 20_001, 'A measurement was recorded. ' * 81, '\ud800'):
             with self.subTest(value_type=type(value).__name__):
                 with self.assertRaises(ValueError):
                     self.classifier.predict(value)
         self.check_readout('The trial measured walking distance. Participants were assigned at random.', 2)
+
+    def test_busy_rejection_and_inference_failure_recovery(self):
+        self.classifier.lock.acquire()
+        try:
+            with self.assertRaisesRegex(RuntimeError, 'another abstract'):
+                self.classifier.predict('The trial recorded blood pressure.')
+        finally:
+            self.classifier.lock.release()
+        original = self.classifier._predict
+        try:
+            def failure(sentences):
+                raise RuntimeError('Injected model failure')
+            self.classifier._predict = failure
+            with self.assertRaisesRegex(RuntimeError, 'Injected model failure'):
+                self.classifier.predict('The trial recorded blood pressure.')
+            self.assertFalse(self.classifier.lock.locked())
+            import numpy as np
+            self.classifier._predict = lambda sentences: np.zeros((0, 5))
+            with self.assertRaisesRegex(RuntimeError, 'invalid prediction'):
+                self.classifier.predict('The trial recorded blood pressure.')
+        finally:
+            self.classifier._predict = original
+        self.check_readout('The trial recorded blood pressure.', 1)
 
     def test_repeated_new_caller_threads(self):
         for _ in range(3):
