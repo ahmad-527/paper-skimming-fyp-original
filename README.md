@@ -27,9 +27,11 @@ Code structure, the model sequence and much explanatory Markdown follow the [Ski
 
 ## Interactive reading interface — added later
 
+[**Open Paper Skimming**](https://paper-skimming-fyp.streamlit.app/) — free, public access with live historical-model inference. The free host may sleep when inactive; its first model load can take a few minutes.
+
 [Paper Skimming](interface/README.md) is a separate reading interface added on **9 October 2026**, after the original project's completion. Paste an abstract, explore its sentence roles, inspect model scores, switch between sentence order and grouped reading, and export a readout. The interface and its pinned inference runtime do not change the archived notebooks or thesis results.
 
-Live classification uses an existing historical tribrid checkpoint saved on 7 December 2024. Its weights stay outside this repository. Its relationship to the exact thesis runs is unverified; live predictions differ from the notebook's saved example. A separately labelled recorded example preserves the original predictions. See the [setup and deployment instructions](interface/README.md) to run it locally; public hosting is not yet configured.
+Live classification uses an existing historical tribrid checkpoint saved on 7 December 2024. Its weights stay in private storage outside this repository. Its relationship to the exact thesis runs is unverified; live predictions differ from the notebook's saved example. A separately labelled recorded example preserves the original predictions. See the [setup and deployment instructions](interface/README.md) to run it locally.
 
 ## Archived files
 

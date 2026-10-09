@@ -1,5 +1,7 @@
 # Paper Skimming interface
 
+[**Open the free public app**](https://paper-skimming-fyp.streamlit.app/). Live historical-model inference was verified on Streamlit Community Cloud on 9 October 2026. The free host may sleep when inactive, and the first model load can take a few minutes.
+
 Added **9 October 2026**, after the original undergraduate project was completed. This is a presentation and inference layer around a historical model, not a new training experiment or the separate rebuilt version. The archived notebooks and their results are unchanged.
 
 The interface supports pasted abstracts, five role filters, sentence-order/grouped reading, inspection of all five model scores, JSON/Markdown exports, and a thesis PDF. It includes a clearly labelled recorded example, extracted from the unchanged 20k notebook, for use while the model loads. Live submissions use the real checkpoint; no fallback heuristic generates predictions.
@@ -70,4 +72,4 @@ The local server binds loopback by default; `--host`/`--port` or `PAPER_SKIMMING
 
 ## Validation
 
-Verified locally with the pinned Python runtime: the checkpoint loads, produces five probabilities per sentence, and processes the eight-sentence example through the API. Input rejection, same-origin handling, static-file boundaries, label mapping and the original out-of-range position behaviour were checked. The original notebooks were not executed. Interface additions do not establish new benchmark scores.
+Verified locally with the pinned Python runtime: the checkpoint loads, produces five probabilities per sentence, and processes the eight-sentence example through the API. Input rejection, same-origin handling, static-file boundaries, label mapping and the original out-of-range position behaviour were checked. The hosted app loaded the private checkpoint and classified the eight-sentence example with the same labels and displayed scores as the local runtime. Public access was confirmed in the host's sharing settings. The original notebooks were not executed. Interface additions do not establish new benchmark scores.

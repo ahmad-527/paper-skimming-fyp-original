@@ -1,0 +1,6 @@
+[server]
+# The hosted source is updated through Git, so local file watches are unnecessary.
+fileWatcherType = "none"
+
+[browser]
+gatherUsageStats = false
