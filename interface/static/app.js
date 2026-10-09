@@ -6,6 +6,7 @@ const roles = [
 ];
 let sample, result, analysedText = '', grouped = false, filter = 'ALL', busy = false, modelState = 'loading';
 const text = $('abstract');
+const sentenceCount = count => `${count} ${count === 1 ? 'sentence' : 'sentences'}`;
 let cloud = false, cloudOrigin = null, cloudRequest = null, lastCloudResponse = null, lastFrameHeight = 0;
 let currentReadoutId = null, liveExports = null, recordedExports = null, preparedResult = null, localExportUrls = [];
 function cloudMessage(type, value) {
@@ -37,7 +38,7 @@ window.addEventListener('message', event => {
       currentReadoutId = response.request_id;
       result = response.data; text.value = result.text; analysedText = result.text;
       grouped = false; filter = 'ALL'; render(); updateInput();
-      announce(`${result.sentences.length} sentences classified.`);
+      announce(`${sentenceCount(result.sentences.length)} classified.`);
     } else if (response.error) {
       text.value = response.text || ''; updateInput(); setError(response.error);
     }
@@ -108,13 +109,13 @@ $('analyse-button').addEventListener('click', async () => {
   $('empty-state').classList.add('hidden'); $('results').classList.add('hidden'); $('loading-state').classList.remove('hidden');
   try {
     const data = await classify(submitted);
-    result = data; analysedText = submitted; grouped = false; filter = 'ALL'; render(); updateInput(); announce(`${result.sentences.length} sentences classified.`);
+    result = data; analysedText = submitted; grouped = false; filter = 'ALL'; render(); updateInput(); announce(`${sentenceCount(result.sentences.length)} classified.`);
   } catch(e) { setError(e.name === 'TimeoutError' ? 'The model took too long. Please try again.' : e.message === 'Failed to fetch' ? 'Connection lost. Check the model host and try again.' : e.message); if (result) render(); else $('empty-state').classList.remove('hidden'); }
   finally { busy = false; $('analyse-button').disabled = false; $('recorded-button').disabled = false; $('analyse-button').firstElementChild.textContent = 'Skim this abstract'; $('loading-state').classList.add('hidden'); }
 });
 function render() {
   $('empty-state').classList.add('hidden'); $('results').classList.remove('hidden');
-  $('sentence-count').textContent = `${result.sentences.length} sentences`;
+  $('sentence-count').textContent = sentenceCount(result.sentences.length);
   $('result-source').textContent = result.mode === 'recorded' ? 'Recorded 20k notebook example · preserved predictions' : 'Live · historical December 2024 checkpoint';
   $('position-note').classList.toggle('hidden', !result.position_note);
   $('order-view').setAttribute('aria-pressed', String(!grouped)); $('group-view').setAttribute('aria-pressed', String(grouped));
