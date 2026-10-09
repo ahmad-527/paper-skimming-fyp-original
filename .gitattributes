@@ -1,0 +1,4 @@
+# Preserve the exact bytes of the archived records on every checkout.
+*.ipynb -text
+*.docx -text
+*.pdf -text

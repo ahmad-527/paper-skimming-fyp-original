@@ -1,0 +1,13 @@
+tensorflow==2.17.0
+keras==3.5.0
+tensorflow-hub==0.16.1
+tf-keras==2.17.0
+spacy==3.7.5
+weasel==0.4.1
+typer==0.9.0
+click==8.1.8
+setuptools==75.8.0
+streamlit==1.50.0
+huggingface-hub==0.35.3
+numpy==1.26.4
+pyarrow==19.0.1

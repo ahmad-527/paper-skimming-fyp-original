@@ -1,0 +1,12 @@
+*
+!interface/
+!interface/**
+!report/
+!report/final_year_report.pdf
+**/__pycache__/
+**/*.keras
+**/*.h5
+**/.venv/
+**/secrets.toml
+**/.env
+**/.cache/

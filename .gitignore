@@ -1,0 +1,31 @@
+# Datasets and compressed data
+pubmed-rct/
+*.txt
+!interface/requirements.txt
+*.zip
+*.7z
+
+# Trained model files
+*.keras
+*.h5
+*.pb
+saved_model/
+
+# Notebook checkpoints and runtime course downloads
+.ipynb_checkpoints/
+helper_functions.py
+skimlit_example_abstracts.json
+__pycache__/
+
+# Operating system clutter
+.DS_Store
+Thumbs.db
+Desktop.ini
+~$*
+
+# Interface runtime stays outside the archive
+.venv/
+tfhub_cache/
+.cache/
+.streamlit/secrets.toml
+.env

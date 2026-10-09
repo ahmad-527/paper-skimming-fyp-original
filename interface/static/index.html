@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f3ed">
+  <meta name="description" content="Explore the structure of biomedical research abstracts with a historical sentence classifier.">
+  <title>Paper Skimming — Read the structure</title>
+  <link rel="stylesheet" href="./app.css"><script src="./app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#workspace">Skip to workspace</a>
+<header class="masthead wrap">
+  <a href="#workspace" class="brand" aria-label="Paper Skimming home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 4h14l5 5v19H7z"/><path d="M21 4v6h5M12 15h9M12 19h6M12 23h9"/></svg><span>paper<span class="brand-light">skimming</span><small>THE RESEARCH READING TOOL</small></span></a>
+  <nav aria-label="Main"><a href="#workspace">Workspace</a><button class="text-button" id="about-button">The research <span aria-hidden="true">↗</span></button><a href="/report.pdf" target="_blank" rel="noopener">Thesis <span aria-hidden="true">↗</span></a></nav>
+  <span class="edition">ORIGINAL RESEARCH · 2024–25</span>
+</header>
+<main class="wrap">
+  <section class="hero">
+    <div><p class="eyebrow"><span class="tiny-mark"></span> FIVE ROLES. ONE CLEARER READ.</p><h1>An abstract,<br>with <em>structure.</em></h1><p class="intro">Find the purpose, follow the method, get to the findings.<br>Turn a biomedical abstract into a more navigable read.</p></div>
+    <div class="hero-note"><span class="note-number">01—05</span><div class="mini-abstract" aria-hidden="true"><i class="bg"></i><i class="obj"></i><i class="meth"></i><i class="meth short"></i><i class="res"></i><i class="conc short"></i></div><p>Same sentences.<br><strong>A different way in.</strong></p></div>
+  </section>
+  <div class="workspace-heading" id="workspace"><h2>Your reading workspace</h2><span id="model-state" class="status"><i></i><span>Connecting to model</span></span></div>
+  <section class="workspace" aria-label="Abstract classifier">
+    <div class="editor panel">
+      <div class="panel-top"><div><p class="eyebrow">01 / INPUT</p><h3>The abstract</h3></div><button class="small-button" id="example-button">Load example <span aria-hidden="true">↙</span></button></div>
+      <label for="abstract" class="sr-only">Biomedical research abstract</label>
+      <textarea id="abstract" maxlength="20000" placeholder="Paste a biomedical RCT abstract here. The classifier reads each sentence and suggests its role in the study." spellcheck="false"></textarea>
+      <div class="editor-meta"><span id="character-count">0 / 20,000 characters</span><button class="text-button" id="clear-button">Clear</button></div>
+      <button id="analyse-button" class="primary"><span>Skim this abstract</span><span class="arrow" aria-hidden="true">↗</span></button>
+      <div class="secondary-action"><button class="text-button" id="recorded-button">Explore the recorded example</button><span>Works while the model loads</span></div>
+      <p class="privacy"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1 2 4v4c0 4 6 7 6 7s6-3 6-7V4z"/><path d="m5 8 2 2 4-4"/></svg>Submissions are processed on this host and are not stored.</p>
+      <div id="input-error" class="error hidden" role="alert"></div>
+    </div>
+    <div class="reader panel">
+      <div class="panel-top"><div><p class="eyebrow">02 / READOUT</p><h3>The shape of the study</h3></div><span id="sentence-count" class="count-tag">Ready when you are</span></div>
+      <div id="empty-state" class="empty-state"><div class="empty-paper" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div><h4>A little order,<br>a lot more clarity.</h4><p>Add an abstract or explore the recorded example.<br>Each sentence will keep its original wording.</p><div class="role-key"><span class="role bg">Background</span><span class="role obj">Objective</span><span class="role meth">Methods</span><span class="role res">Results</span><span class="role conc">Conclusions</span></div></div>
+      <div id="results" class="hidden">
+        <div class="result-meta"><span id="result-source"></span><span id="stale" class="hidden">Input changed · analyse again</span></div>
+        <div class="view-controls"><div class="segmented" aria-label="Reading layout"><button id="order-view" aria-pressed="true">Sentence order</button><button id="group-view" aria-pressed="false">By role</button></div><button class="text-button" id="export-button">Export ↓</button></div>
+        <div id="role-filters" class="filters" aria-label="Filter sentence roles"></div>
+        <p class="reader-hint">Select a sentence to inspect its model scores.</p>
+        <div id="sentence-list" class="sentence-list"></div>
+        <p id="position-note" class="position-note hidden">This abstract exceeds the original line-position feature range. Later sentences retain the notebook's zero-vector behaviour.</p>
+        <p class="score-note">Scores are model outputs, not calibrated certainty. Use the original paper to check the reading.</p>
+      </div>
+      <div id="loading-state" class="loading-state hidden" role="status"><div class="spinner"></div><h4>Finding the structure…</h4><p>The historical model is reading your sentences.</p></div>
+    </div>
+  </section>
+  <section class="research-strip"><div><span class="strip-index">THE FOUNDATION</span><p>Built on research into sequential sentence classification<br>by <strong>Dernoncourt, Lee &amp; Szolovits.</strong></p></div><div class="strip-detail"><span>PubMed 20k &amp; 200k RCT</span><span>Five sentence roles</span><span>Token + character + position</span></div></section>
+  <footer><p>Undergraduate final-year project · Ahmad Sajjad Siddiqui · Majan University College</p><p>Interface added 9 October 2026, after the original project’s completion.</p><p class="fine-print">A research reading aid. The live historical checkpoint has not been independently matched to the thesis result tables.</p></footer>
+</main>
+<dialog id="research-dialog" aria-labelledby="research-title"><div class="dialog-top"><p class="eyebrow">RESEARCH &amp; PROVENANCE</p><button id="close-research" class="icon-button" aria-label="Close research details">×</button></div><h2 id="research-title">From research<br>to a reading tool.</h2><p>This undergraduate project compares sentence classifiers for biomedical RCT abstracts. The live interface uses the existing December 2024 tribrid checkpoint: Universal Sentence Encoder, character BiLSTM and sentence-position features.</p><h3>The papers</h3><ul><li><a href="https://arxiv.org/abs/1710.06071" target="_blank" rel="noopener">Dernoncourt &amp; Lee (2017), PubMed 200k RCT ↗</a></li><li><a href="https://arxiv.org/abs/1612.05251" target="_blank" rel="noopener">Dernoncourt, Lee &amp; Szolovits, Neural Networks for Joint Sentence Classification in Medical Paper Abstracts ↗</a></li></ul><p>The project supplies sentence position as features; it does not implement joint sequence decoding.</p><h3>The preserved results</h3><table><caption>Thesis tribrid test results · historical notebook outputs</caption><thead><tr><th>Dataset</th><th>Accuracy</th><th>Weighted F1</th></tr></thead><tbody><tr><td>PubMed 20k</td><td>82.45%</td><td>0.8233</td></tr><tr><td>PubMed 200k</td><td>84.90%</td><td>0.8471</td></tr></tbody></table><p>These values describe the archived experiments. The live checkpoint's relationship to those exact runs is unverified. Neither the model nor the notebooks were retrained for this interface.</p><p class="course-note">Implementation adapted from SkimLit in <a href="https://github.com/mrdbourke/tensorflow-deep-learning" target="_blank" rel="noopener">Daniel Bourke’s TensorFlow Deep Learning course</a> (MIT). This interface was added after the original project's completion, on 9 October 2026.</p><a class="report-link" href="/report.pdf" target="_blank" rel="noopener">Read the full thesis ↗</a></dialog>
+<dialog id="export-dialog" aria-labelledby="export-title"><div class="dialog-top"><p class="eyebrow">TAKE YOUR READOUT</p><button id="close-export" class="icon-button" aria-label="Close export">×</button></div><h2 id="export-title">Keep the structure.</h2><p>Exports include every sentence, its original wording and the model provenance.</p><div class="export-options"><button id="download-json" class="primary">Download JSON ↓</button><button id="download-markdown" class="small-button">Download Markdown ↓</button><button id="copy-result" class="small-button">Copy to clipboard</button></div><p id="copy-status" role="status"></p></dialog>
+<div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
+</body>
+</html>
