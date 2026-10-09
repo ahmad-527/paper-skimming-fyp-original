@@ -61,6 +61,16 @@ function updateInput() {
   $('stale').classList.toggle('hidden', !result || text.value.trim() === analysedText);
 }
 text.addEventListener('input', updateInput);
+text.addEventListener('paste', event => {
+  const incoming = event.clipboardData?.getData('text/plain');
+  if (incoming === undefined) return;
+  const remaining = text.value.length - (text.selectionEnd - text.selectionStart);
+  if (remaining + incoming.length > 20_000) {
+    event.preventDefault();
+    setError('Use an abstract of 20,000 characters or fewer. The oversized paste was not inserted.');
+    announce('Paste exceeds the character limit. Existing text was kept.');
+  }
+});
 $('clear-button').addEventListener('click', () => { text.value = ''; updateInput(); setError(''); text.focus(); });
 async function getSample() {
   if (!sample) { const response = await fetch('./sample.json'); if (!response.ok) throw Error('The example could not be loaded.'); sample = await response.json(); }
@@ -102,6 +112,7 @@ async function classify(submitted) {
 $('analyse-button').addEventListener('click', async () => {
   if (busy) return;
   if (!text.value.trim()) { setError('Paste an abstract or load an example first.'); text.focus(); return; }
+  if (text.value.length > 20_000) { setError('Use an abstract of 20,000 characters or fewer.'); text.focus(); return; }
   if (modelState !== 'ready') { setError('The historical model is not ready yet. Explore the recorded example, or try again after the status changes.'); status(); return; }
   const submitted = text.value.trim(); busy = true; setError('');
   $('analyse-button').disabled = true; $('recorded-button').disabled = true;

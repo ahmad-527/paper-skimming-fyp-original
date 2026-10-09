@@ -34,6 +34,8 @@ The loader traces inference once into a TensorFlow concrete function before serv
 
 The training domain is biomedical randomized controlled trial abstracts. Reviews and other paper types may receive less reliable labels. Paste the abstract body without keywords or publisher notices; the app preserves submitted wording and does not silently remove these lines. Successful execution on arbitrary text does not establish classification accuracy on that text.
 
+Sentence boundaries retain the original spaCy behaviour. A period attached to a unit abbreviation can keep two apparent sentences together; inspect the readout when using unusual formatting. Oversized pastes are rejected before insertion so the browser does not silently truncate the abstract.
+
 ## Deployment
 
 ### Free Streamlit Community Cloud
