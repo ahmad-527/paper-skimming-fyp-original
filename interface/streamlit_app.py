@@ -82,8 +82,8 @@ def workspace():
         print(f'Inference failed: {type(error).__name__}; {locations}', flush=True)
         response["error"] = "The model could not complete this read. Please try again."
     st.session_state["readout_response"] = response
-    # A component request can arrive during an initial full run or a fragment run.
-    st.rerun()
+    # The next heartbeat sends the response into the existing component iframe.
+    # A full rerun would remount it and discard its pending browser request.
 
 
 workspace()
