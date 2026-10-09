@@ -6,7 +6,7 @@ const roles = [
 ];
 let sample, result, analysedText = '', grouped = false, filter = 'ALL', busy = false, modelState = 'loading';
 const text = $('abstract');
-let cloud = false, cloudOrigin = null, cloudRequest = null, lastFrameHeight = 0;
+let cloud = false, cloudOrigin = null, cloudRequest = null, lastCloudResponse = null, lastFrameHeight = 0;
 function cloudMessage(type, value) {
   window.parent.postMessage({isStreamlitMessage:true,type,...value},cloudOrigin || '*');
 }
@@ -24,7 +24,19 @@ window.addEventListener('message', event => {
   const response = args.response;
   if (cloudRequest && response?.request_id === cloudRequest.id) {
     const pending = cloudRequest; cloudRequest = null; clearTimeout(pending.timer);
+    lastCloudResponse = response.request_id;
     response.error ? pending.reject(Error(response.error)) : pending.resolve(response.data);
+  } else if (!cloudRequest && !result && response?.request_id && response.request_id !== lastCloudResponse) {
+    // Streamlit can recreate the iframe during a full page run. Restore its
+    // session response so a completed request survives that browser remount.
+    lastCloudResponse = response.request_id;
+    if (response.data) {
+      result = response.data; text.value = result.text; analysedText = result.text;
+      grouped = false; filter = 'ALL'; render(); updateInput();
+      announce(`${result.sentences.length} sentences classified.`);
+    } else if (response.error) {
+      text.value = response.text || ''; updateInput(); setError(response.error);
+    }
   }
   frameHeight();
 });

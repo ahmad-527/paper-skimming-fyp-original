@@ -72,7 +72,8 @@ def workspace():
         return
     response = {"request_id": request_id}
     try:
-        response["data"] = classifier.predict(validate_text(request.get("text")))
+        response["text"] = validate_text(request.get("text"))
+        response["data"] = classifier.predict(response["text"])
     except (ValueError, RuntimeError) as error:
         response["error"] = str(error)
     except Exception as error:
