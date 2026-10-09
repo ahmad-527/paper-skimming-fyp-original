@@ -30,6 +30,8 @@ Its exact relationship to the thesis evaluation runs is unverified. A live run o
 
 The inference path retains the notebook's blank English spaCy sentencizer, original-case sentences, space-separated characters, zero-based sentence positions, and `total_lines = sentence_count - 1`. One-hot depths remain 15 and 20. Positions beyond those ranges produce zero vectors, as in the original code; the interface shows a note for long abstracts. There is no new number replacement, lowercasing, label smoothing at inference, training, or calibration. Softmax indices use the notebook's alphabetical `LabelEncoder` order: BACKGROUND, CONCLUSIONS, METHODS, OBJECTIVE, RESULTS.
 
+The loader traces inference once into a TensorFlow concrete function before serving requests. This prevents Streamlit's Keras cleanup between page runs from interrupting another visitor's prediction. The weights, architecture and preprocessing are unchanged; graph and original eager predictions agree within an absolute probability tolerance of `1e-5` on the historical example, with identical predicted labels.
+
 ## Deployment
 
 ### Free Streamlit Community Cloud
@@ -73,3 +75,11 @@ The local server binds loopback by default; `--host`/`--port` or `PAPER_SKIMMING
 ## Validation
 
 Verified locally with the pinned Python runtime: the checkpoint loads, produces five probabilities per sentence, and processes the eight-sentence example through the API. Input rejection, same-origin handling, static-file boundaries, label mapping and the original out-of-range position behaviour were checked. The hosted app loaded the private checkpoint and classified the eight-sentence example with the same labels and displayed scores as the local runtime. Public access was confirmed in the host's sharing settings. The original notebooks were not executed. Interface additions do not establish new benchmark scores.
+
+The real-checkpoint regression suite covers simultaneous Keras cleanup and inference, repeated caller threads, recovery after invalid input, Unicode and pasted headings, 1–80 sentences, the character limit, and graph/eager agreement. Run it after setting the external model and encoder cache as above:
+
+```powershell
+.\.venv\Scripts\python.exe interface\test_inference.py -v
+```
+
+The suite skips when no external checkpoint is configured. Weights and user-supplied regression abstracts are not included in Git.

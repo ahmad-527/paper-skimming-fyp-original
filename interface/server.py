@@ -39,7 +39,7 @@ class Classifier:
         self.path = Path(model_path).expanduser() if model_path else None
         self.lock = threading.Lock()
         self.state = "loading" if self.path else "unconfigured"
-        self.model = self.tf = self.nlp = None
+        self.model = self.tf = self.nlp = self.inference = None
 
     def status(self):
         return {"state": self.state, "checkpoint": "Historical tribrid · 7 December 2024",
@@ -83,6 +83,16 @@ class Classifier:
             self.tf = tf
             self.nlp = English()
             self.nlp.add_pipe("sentencizer")
+            # Trace once before serving visitors. Streamlit clears Keras' Python
+            # state between runs; a concrete graph avoids that shared state at inference.
+            signature = [[tf.TensorSpec((None, 15), tf.int32), tf.TensorSpec((None, 20), tf.int32),
+                          tf.TensorSpec((None,), tf.string), tf.TensorSpec((None, 1), tf.string)]]
+
+            @tf.function(input_signature=signature, autograph=False, jit_compile=False)
+            def infer(inputs):
+                return self.model(inputs, training=False)
+
+            self.inference = infer.get_concrete_function()
             self._predict(["A research abstract."])
             self.state = "ready"
             print("Historical classifier ready.", flush=True)
@@ -98,7 +108,7 @@ class Classifier:
         lines, totals = position_features(len(sentences))
         inputs = [tf.constant(lines, dtype=tf.int32), tf.constant(totals, dtype=tf.int32),
                   tf.constant(sentences), tf.constant([[" ".join(list(s))] for s in sentences])]
-        return self.model(inputs, training=False).numpy()
+        return self.inference(inputs).numpy()
 
     def predict(self, text):
         text = validate_text(text)
